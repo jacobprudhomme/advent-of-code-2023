@@ -61,7 +61,7 @@ func isRoundPossible(round GameRound) bool {
 	return round.r <= 12 && round.g <= 13 && round.b <= 14
 }
 
-func isGamePossible(game []GameRound, gameId int) bool {
+func isGamePossible(game []GameRound) bool {
 	var wg sync.WaitGroup
 	wg.Add(len(game))
 	
@@ -92,23 +92,58 @@ func part1(input [][]GameRound) int {
 	var gameIdsSum atomic.Int32
 	for idx, game := range input {
 		go func(game []GameRound, gameId int) {
-			isPossible := isGamePossible(game, gameId)
-			
-			if isPossible {
+			if isGamePossible(game) {
 				gameIdsSum.Add(int32(gameId))
 			}
 			
 			wg.Done()
 		}(game, idx + 1)
 	}
-	
+
 	wg.Wait()
-	
+
 	return int(gameIdsSum.Load())
+}
+
+func getPowerForGame(game []GameRound) int {
+	var maxBlocks GameRound
+	for _, round := range game {
+		if round.r > maxBlocks.r {
+			maxBlocks.r = round.r
+		}
+		if round.g > maxBlocks.g {
+			maxBlocks.g = round.g
+		}
+		if round.b > maxBlocks.b {
+			maxBlocks.b = round.b
+		}
+	}
+
+	return maxBlocks.r * maxBlocks.g * maxBlocks.b
+}
+
+func part2(input [][]GameRound) int {
+	var wg sync.WaitGroup
+	wg.Add(len(input))
+
+	var gamePowersSum atomic.Int32
+	for _, game := range input {
+		go func(game []GameRound) {
+			power := getPowerForGame(game)
+			gamePowersSum.Add(int32(power))
+
+			wg.Done()
+		}(game)
+	}
+
+	wg.Wait()
+
+	return int(gamePowersSum.Load())
 }
 
 func main() {
 	input := parseInput()
 	
 	fmt.Println(part1(input))
+	fmt.Println(part2(input))
 }
